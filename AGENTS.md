@@ -14,16 +14,16 @@
 ## 2. Технологический стек
 | Подсистема | Требования |
 |------------|------------|
-| Клиент | Next.js (App Router) + TypeScript |
-| Стили | Tailwind CSS, shadcn/ui, дизайн-токены из `docs/shadcn-ui-theme.css` |
-| Бэкенд | Prisma ORM с PostgreSQL |
-| Аутентификация | NextAuth.js (Email/пароль + Google OAuth, подтверждение email) |
-| Карты | Leaflet или MapLibre GL JS, OSM-тайлы |
-| Треки | Импорт/экспорт GPX, KML, GeoJSON (FIT опционально) |
-| Медиа | Sharp для изображений, Node-Canvas или Puppeteer для превью карт |
-| PDF | `html-pdf-node` или аналог |
-| Инфраструктура | Docker/Docker Compose для разработки и деплоя |
-| SEO/Аналитика | JSON-LD, Open Graph, Яндекс.Метрика, Google Analytics |
+| **Клиент** | Next.js (App Router) + TypeScript |
+| **Стили** | Tailwind CSS, shadcn/ui, дизайн-токены из `docs/shadcn-ui-theme.css` |
+| **Бэкенд** | Prisma ORM с PostgreSQL |
+| **Аутентификация** | NextAuth.js (Email/пароль + Google OAuth, подтверждение email) |
+| **Карты** | Leaflet или MapLibre GL JS, OSM-тайлы |
+| **Треки** | Импорт/экспорт GPX, KML, GeoJSON (FIT опционально) |
+| **Медиа** | Sharp для изображений, Node-Canvas или Puppeteer для превью карт |
+| **PDF** | `html-pdf-node` или аналог |
+| **Инфраструктура** | Docker/Docker Compose для разработки и деплоя |
+| **SEO/Аналитика** | JSON-LD, Open Graph, Яндекс.Метрика, Google Analytics |
 
 ---
 
