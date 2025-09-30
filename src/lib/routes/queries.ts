@@ -5,12 +5,14 @@ import {
   DURATION_RANGE_BY_VALUE,
   ROUTE_AUDIENCES,
   ROUTE_DIFFICULTIES,
+  ROUTE_STATUSES,
 } from "./constants";
 import type {
   CatalogFilters,
   CatalogRoute,
   RawRouteDetailsRecord,
   RawRouteRecord,
+  RouteAuthorSummary,
   RouteDetails,
   RoutePointOfInterest,
   RouteTrackGeoJson,
@@ -21,6 +23,7 @@ const DEFAULT_LIMIT = 24;
 const SEARCH_DICTIONARY = "russian";
 const difficultySet = new Set(ROUTE_DIFFICULTIES.map((option) => option.value));
 const audienceSet = new Set(ROUTE_AUDIENCES.map((option) => option.value));
+const statusSet = new Set(ROUTE_STATUSES.map((option) => option.value));
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
@@ -319,8 +322,11 @@ function serializeRoute(record: RawRouteRecord): CatalogRoute {
     tags: ensureStringArray(record.tags),
     highlights: ensureStringArray(record.highlights),
     coverImageUrl: record.coverImageUrl,
+    previewImageUrl: record.previewImageUrl,
+    galleryImageUrls: ensureStringArray(record.galleryImageUrls),
     ratingAverage: toNullableNumber(record.ratingAverage),
     ratingCount: record.ratingCount,
+    status: statusSet.has(record.status) ? record.status : "DRAFT",
     publishedAt: toDate(record.publishedAt),
     createdAt: toDate(record.createdAt) ?? new Date(0),
   };
@@ -337,14 +343,18 @@ function serializeRouteDetails(record: RawRouteDetailsRecord): RouteDetails {
     safetyNotes: sanitizeOptionalText(record.safetyNotes),
     interestingFacts: sanitizeInterestingFacts(record.interestingFacts),
     trackGeoJson: sanitizeTrackGeoJson(record.trackGeoJson),
+    trackSourceFormat: typeof record.trackSourceFormat === "string" ? record.trackSourceFormat : null,
+    trackSourceFilename: typeof record.trackSourceFilename === "string" ? record.trackSourceFilename : null,
+    trackUpdatedAt: toDate(record.trackUpdatedAt),
     pointsOfInterest: sanitizePointsOfInterest(record.pointsOfInterest),
+    authors: [],
   };
 }
 
 function buildCatalogQuery(filters: CatalogFilters): string {
   const limit = Math.min(filters.limit ?? DEFAULT_LIMIT, 60);
   const textVector = `to_tsvector('${SEARCH_DICTIONARY}', coalesce("title", '') || ' ' || coalesce("summary", '') || ' ' || coalesce("city", '') || ' ' || coalesce("region", '') || ' ' || coalesce(array_to_string("tags", ' '), '') || ' ' || coalesce(array_to_string("highlights", ' '), ''))`;
-  const conditions: string[] = ['"isPublished" = true'];
+  const conditions: string[] = ['"status" = \'PUBLISHED\''];
 
   let searchQuerySql: string | null = null;
 
@@ -391,8 +401,11 @@ function buildCatalogQuery(filters: CatalogFilters): string {
       "tags",
       "highlights",
       "coverImageUrl",
+      "previewImageUrl",
+      "galleryImageUrls",
       "ratingAverage",
       "ratingCount",
+      "status",
       "isPublished",
       "publishedAt",
       "createdAt",
@@ -422,8 +435,11 @@ function buildRouteDetailsQuery(slug: string): string {
       "tags",
       "highlights",
       "coverImageUrl",
+      "previewImageUrl",
+      "galleryImageUrls",
       "ratingAverage",
       "ratingCount",
+      "status",
       "isPublished",
       "publishedAt",
       "createdAt",
@@ -434,11 +450,34 @@ function buildRouteDetailsQuery(slug: string): string {
       "safetyNotes",
       "interestingFacts",
       "trackGeoJson",
+      "trackSourceFormat",
+      "trackSourceFilename",
+      "trackUpdatedAt",
       "pointsOfInterest"
     FROM "Route"
-    WHERE "slug" = '${sanitizedSlug}' AND "isPublished" = true
+    WHERE "slug" = '${sanitizedSlug}' AND "status" = 'PUBLISHED'
     LIMIT 1
   `;
+}
+
+async function getRouteAuthors(routeId: string): Promise<RouteAuthorSummary[]> {
+  const records = await prisma.routeAuthor.findMany({
+    where: { routeId },
+    include: {
+      user: true,
+    },
+    orderBy: {
+      assignedAt: "asc",
+    },
+  });
+
+  type RouteAuthorRecord = (typeof records)[number];
+
+  return records.map((record: RouteAuthorRecord): RouteAuthorSummary => ({
+    id: record.userId,
+    name: record.user.name,
+    email: record.user.email,
+  }));
 }
 
 export async function getCatalogRoutes(filters: CatalogFilters): Promise<CatalogRoute[]> {
@@ -451,7 +490,13 @@ export async function getRouteDetailsBySlug(slug: string): Promise<RouteDetails 
   const query = buildRouteDetailsQuery(slug);
   const rows = (await prisma.$queryRawUnsafe(query)) as RawRouteDetailsRecord[];
   const record = rows[0];
-  return record ? serializeRouteDetails(record) : null;
+  if (!record) {
+    return null;
+  }
+
+  const details = serializeRouteDetails(record);
+  details.authors = await getRouteAuthors(details.id);
+  return details;
 }
 
 export async function getRouteTrackForExport(slug: string) {

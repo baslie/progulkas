@@ -35,3 +35,68 @@ export function formatDuration(minutes: number) {
 
   return parts.length ? parts.join(" ") : "до 1 ч";
 }
+
+const CYRILLIC_MAP: Record<string, string> = {
+  а: "a",
+  б: "b",
+  в: "v",
+  г: "g",
+  д: "d",
+  е: "e",
+  ё: "e",
+  ж: "zh",
+  з: "z",
+  и: "i",
+  й: "y",
+  к: "k",
+  л: "l",
+  м: "m",
+  н: "n",
+  о: "o",
+  п: "p",
+  р: "r",
+  с: "s",
+  т: "t",
+  у: "u",
+  ф: "f",
+  х: "h",
+  ц: "ts",
+  ч: "ch",
+  ш: "sh",
+  щ: "shch",
+  ъ: "",
+  ы: "y",
+  ь: "",
+  э: "e",
+  ю: "yu",
+  я: "ya",
+};
+
+export function slugify(input: string): string {
+  const lower = input.toLowerCase();
+  const transliterated = Array.from(lower)
+    .map((char) => {
+      if (CYRILLIC_MAP[char]) {
+        return CYRILLIC_MAP[char];
+      }
+
+      if (/[a-z0-9]/.test(char)) {
+        return char;
+      }
+
+      if (char === " " || char === "-" || char === "_") {
+        return "-";
+      }
+
+      return "-";
+    })
+    .join("");
+
+  const normalized = transliterated
+    .normalize("NFD")
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || "route";
+}
