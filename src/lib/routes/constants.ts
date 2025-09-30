@@ -24,6 +24,13 @@ export const ROUTE_AUDIENCES = [
   { value: "STROLLER" as const, label: "С коляской" },
 ] as const;
 
+export const ROUTE_STATUSES = [
+  { value: "DRAFT" as const, label: "Черновик" },
+  { value: "REVIEW" as const, label: "На модерации" },
+  { value: "PUBLISHED" as const, label: "Опубликован" },
+  { value: "ARCHIVED" as const, label: "Архив" },
+] as const;
+
 export const DISTANCE_FILTERS = [
   { value: "short" as const, label: "До 5 км", range: { max: 5 } },
   { value: "medium" as const, label: "5–15 км", range: { min: 5, max: 15 } },
@@ -38,6 +45,7 @@ export const DURATION_FILTERS = [
 
 export type RouteDifficultyValue = (typeof ROUTE_DIFFICULTIES)[number]["value"];
 export type RouteAudienceValue = (typeof ROUTE_AUDIENCES)[number]["value"];
+export type RouteStatusValue = (typeof ROUTE_STATUSES)[number]["value"];
 export type DistanceFilterValue = (typeof DISTANCE_FILTERS)[number]["value"];
 export type DurationFilterValue = (typeof DURATION_FILTERS)[number]["value"];
 
@@ -59,10 +67,18 @@ export const ROUTE_AUDIENCE_LABELS: Record<RouteAudienceValue, string> = Object.
   ROUTE_AUDIENCES.map(({ value, label }) => [value, label]),
 ) as Record<RouteAudienceValue, string>;
 
+export const ROUTE_STATUS_LABELS: Record<RouteStatusValue, string> = Object.fromEntries(
+  ROUTE_STATUSES.map(({ value, label }) => [value, label]),
+) as Record<RouteStatusValue, string>;
+
 export function getDifficultyLabel(value: RouteDifficultyValue) {
   return ROUTE_DIFFICULTY_LABELS[value] ?? value;
 }
 
 export function getAudienceLabel(value: RouteAudienceValue) {
   return ROUTE_AUDIENCE_LABELS[value] ?? value;
+}
+
+export function getStatusLabel(value: RouteStatusValue) {
+  return ROUTE_STATUS_LABELS[value] ?? value;
 }

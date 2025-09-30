@@ -24,6 +24,7 @@ function getGradient(id: string) {
 
 export function RouteCard({ route }: RouteCardProps) {
   const gradient = getGradient(route.id);
+  const imageUrl = route.coverImageUrl ?? route.previewImageUrl;
   const ratingLabel =
     route.ratingAverage !== null
       ? `${route.ratingAverage.toFixed(1)} · ${route.ratingCount} оценок`
@@ -42,14 +43,14 @@ export function RouteCard({ route }: RouteCardProps) {
           <div
             className={cn(
               "absolute inset-0 bg-gradient-to-br",
-              route.coverImageUrl ? "from-black/40 to-black/70" : gradient,
+              imageUrl ? "from-black/40 to-black/70" : gradient,
             )}
           />
-          {route.coverImageUrl ? (
+          {imageUrl ? (
             <div
               aria-hidden
               className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${route.coverImageUrl})` }}
+              style={{ backgroundImage: `url(${imageUrl})` }}
             />
           ) : null}
           <div className="absolute inset-x-0 bottom-0 space-y-1 bg-gradient-to-t from-black/70 to-transparent p-4 text-sm text-white">

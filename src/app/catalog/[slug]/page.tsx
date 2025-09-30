@@ -41,6 +41,7 @@ export async function generateMetadata({ params }: { params: RoutePageProps["par
   }
 
   const title = `${route.title} — Маршруты Прогулки`;
+  const primaryImage = route.coverImageUrl ?? route.previewImageUrl ?? undefined;
 
   return {
     title,
@@ -50,10 +51,10 @@ export async function generateMetadata({ params }: { params: RoutePageProps["par
       description: route.summary,
       type: "article",
       url: `/catalog/${route.slug}`,
-      images: route.coverImageUrl
+      images: primaryImage
         ? [
             {
-              url: route.coverImageUrl,
+              url: primaryImage,
               width: 1200,
               height: 630,
               alt: route.title,
@@ -86,17 +87,18 @@ export default async function RoutePage({ params }: RoutePageProps) {
   ];
 
   const hasMapData = Boolean(route.trackGeoJson) || route.pointsOfInterest.length > 0;
+  const heroImage = route.coverImageUrl ?? route.previewImageUrl;
 
   return (
     <div className="space-y-12 pb-16">
       <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-xl">
         <div className="relative">
           <div className="absolute inset-0">
-            {route.coverImageUrl ? (
+            {heroImage ? (
               <div
                 aria-hidden
                 className="absolute inset-0 bg-cover bg-center opacity-90"
-                style={{ backgroundImage: `url(${route.coverImageUrl})` }}
+                style={{ backgroundImage: `url(${heroImage})` }}
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-secondary/20" />
