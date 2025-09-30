@@ -103,6 +103,13 @@ model Route {
   suitableFor     RouteAudience[]
   tags            String[]         @default([]) @db.Text
   highlights      String[]         @default([]) @db.Text
+  descriptionMarkdown String       @db.Text
+  howToGet        String?          @db.Text
+  howToReturn     String?          @db.Text
+  safetyNotes     String?          @db.Text
+  interestingFacts String[]        @default([]) @db.Text
+  trackGeoJson    Json?
+  pointsOfInterest Json?
   coverImageUrl   String?
   ratingAverage   Decimal?         @db.Decimal(3, 2)
   ratingCount     Int              @default(0)

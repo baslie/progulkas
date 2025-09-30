@@ -6,7 +6,16 @@ import {
   ROUTE_AUDIENCES,
   ROUTE_DIFFICULTIES,
 } from "./constants";
-import type { CatalogFilters, CatalogRoute, RawRouteRecord } from "./types";
+import type {
+  CatalogFilters,
+  CatalogRoute,
+  RawRouteDetailsRecord,
+  RawRouteRecord,
+  RouteDetails,
+  RoutePointOfInterest,
+  RouteTrackGeoJson,
+} from "./types";
+import type { Feature, GeoJsonProperties, LineString, MultiLineString } from "geojson";
 
 const DEFAULT_LIMIT = 24;
 const SEARCH_DICTIONARY = "russian";
@@ -91,6 +100,210 @@ function buildRangeConditions(column: string, range: { min?: number; max?: numbe
   return conditions;
 }
 
+function sanitizeMarkdown(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function sanitizeOptionalText(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function sanitizeInterestingFacts(value: string[] | null): string[] {
+  return ensureStringArray(value).map((item) => item.trim()).filter(Boolean);
+}
+
+const poiCategorySet = new Set<RoutePointOfInterest["category"]>([
+  "viewpoint",
+  "food",
+  "water",
+  "transport",
+  "warning",
+  "info",
+]);
+
+function sanitizePoiCategory(value: unknown): RoutePointOfInterest["category"] | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  return poiCategorySet.has(value as RoutePointOfInterest["category"]) ? (value as RoutePointOfInterest["category"]) : null;
+}
+
+function isCoordinatePair(value: unknown): value is [number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === "number" &&
+    Number.isFinite(value[0]) &&
+    typeof value[1] === "number" &&
+    Number.isFinite(value[1])
+  );
+}
+
+function sanitizeLineStringCoordinates(value: unknown): [number, number][] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const coordinates: [number, number][] = [];
+
+  for (const pair of value) {
+    if (isCoordinatePair(pair)) {
+      coordinates.push([pair[0], pair[1]]);
+    }
+  }
+
+  return coordinates.length ? coordinates : null;
+}
+
+function sanitizeMultiLineStringCoordinates(value: unknown): [number, number][][] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const segments: [number, number][][] = [];
+
+  for (const segment of value) {
+    const sanitized = sanitizeLineStringCoordinates(segment);
+    if (sanitized) {
+      segments.push(sanitized);
+    }
+  }
+
+  return segments.length ? segments : null;
+}
+
+function sanitizeTrackGeoJson(value: unknown): RouteTrackGeoJson | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as { type?: unknown; features?: unknown };
+  if (record.type !== "FeatureCollection" || !Array.isArray(record.features)) {
+    return null;
+  }
+
+  const features: Feature<LineString | MultiLineString, GeoJsonProperties>[] = [];
+
+  for (const feature of record.features) {
+    if (!feature || typeof feature !== "object") {
+      continue;
+    }
+
+    const featureRecord = feature as {
+      type?: unknown;
+      geometry?: unknown;
+      properties?: unknown;
+    };
+
+    if (featureRecord.type !== "Feature" || !featureRecord.geometry || typeof featureRecord.geometry !== "object") {
+      continue;
+    }
+
+    const geometryRecord = featureRecord.geometry as {
+      type?: unknown;
+      coordinates?: unknown;
+    };
+
+    const baseProperties =
+      featureRecord.properties && typeof featureRecord.properties === "object"
+        ? (featureRecord.properties as GeoJsonProperties)
+        : {};
+
+    if (geometryRecord.type === "LineString") {
+      const coordinates = sanitizeLineStringCoordinates(geometryRecord.coordinates);
+      if (!coordinates) {
+        continue;
+      }
+
+      const sanitizedFeature: Feature<LineString, GeoJsonProperties> = {
+        type: "Feature",
+        geometry: { type: "LineString", coordinates },
+        properties: baseProperties,
+      };
+
+      features.push(sanitizedFeature);
+      continue;
+    }
+
+    if (geometryRecord.type === "MultiLineString") {
+      const coordinates = sanitizeMultiLineStringCoordinates(geometryRecord.coordinates);
+      if (!coordinates) {
+        continue;
+      }
+
+      const sanitizedFeature: Feature<MultiLineString, GeoJsonProperties> = {
+        type: "Feature",
+        geometry: { type: "MultiLineString", coordinates },
+        properties: baseProperties,
+      };
+
+      features.push(sanitizedFeature);
+    }
+  }
+
+  return features.length
+    ? {
+        type: "FeatureCollection",
+        features,
+      }
+    : null;
+}
+
+function sanitizePointsOfInterest(value: unknown): RoutePointOfInterest[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const points: RoutePointOfInterest[] = [];
+
+  for (const rawPoint of value) {
+    if (!rawPoint || typeof rawPoint !== "object") {
+      continue;
+    }
+
+    const pointRecord = rawPoint as {
+      id?: unknown;
+      name?: unknown;
+      description?: unknown;
+      category?: unknown;
+      coordinates?: unknown;
+    };
+
+    if (typeof pointRecord.id !== "string" || typeof pointRecord.name !== "string") {
+      continue;
+    }
+
+    const category = sanitizePoiCategory(pointRecord.category);
+    if (!category) {
+      continue;
+    }
+
+    const coordinates = Array.isArray(pointRecord.coordinates) && isCoordinatePair(pointRecord.coordinates)
+      ? (pointRecord.coordinates as [number, number])
+      : null;
+
+    if (!coordinates) {
+      continue;
+    }
+
+    points.push({
+      id: pointRecord.id,
+      name: pointRecord.name,
+      description: typeof pointRecord.description === "string" ? pointRecord.description : null,
+      category,
+      coordinates,
+    });
+  }
+
+  return points;
+}
+
 function serializeRoute(record: RawRouteRecord): CatalogRoute {
   return {
     id: record.id,
@@ -110,6 +323,21 @@ function serializeRoute(record: RawRouteRecord): CatalogRoute {
     ratingCount: record.ratingCount,
     publishedAt: toDate(record.publishedAt),
     createdAt: toDate(record.createdAt) ?? new Date(0),
+  };
+}
+
+function serializeRouteDetails(record: RawRouteDetailsRecord): RouteDetails {
+  const base = serializeRoute(record);
+
+  return {
+    ...base,
+    descriptionMarkdown: sanitizeMarkdown(record.descriptionMarkdown),
+    howToGet: sanitizeOptionalText(record.howToGet),
+    howToReturn: sanitizeOptionalText(record.howToReturn),
+    safetyNotes: sanitizeOptionalText(record.safetyNotes),
+    interestingFacts: sanitizeInterestingFacts(record.interestingFacts),
+    trackGeoJson: sanitizeTrackGeoJson(record.trackGeoJson),
+    pointsOfInterest: sanitizePointsOfInterest(record.pointsOfInterest),
   };
 }
 
@@ -176,10 +404,68 @@ function buildCatalogQuery(filters: CatalogFilters): string {
   `;
 }
 
+function buildRouteDetailsQuery(slug: string): string {
+  const sanitizedSlug = escapeLiteral(slug);
+
+  return `
+    SELECT
+      "id",
+      "slug",
+      "title",
+      "summary",
+      "city",
+      "region",
+      "difficulty",
+      "distanceKm",
+      "durationMinutes",
+      "suitableFor",
+      "tags",
+      "highlights",
+      "coverImageUrl",
+      "ratingAverage",
+      "ratingCount",
+      "isPublished",
+      "publishedAt",
+      "createdAt",
+      "updatedAt",
+      "descriptionMarkdown",
+      "howToGet",
+      "howToReturn",
+      "safetyNotes",
+      "interestingFacts",
+      "trackGeoJson",
+      "pointsOfInterest"
+    FROM "Route"
+    WHERE "slug" = '${sanitizedSlug}' AND "isPublished" = true
+    LIMIT 1
+  `;
+}
+
 export async function getCatalogRoutes(filters: CatalogFilters): Promise<CatalogRoute[]> {
   const query = buildCatalogQuery(filters);
   const rows = (await prisma.$queryRawUnsafe(query)) as RawRouteRecord[];
   return rows.map(serializeRoute);
+}
+
+export async function getRouteDetailsBySlug(slug: string): Promise<RouteDetails | null> {
+  const query = buildRouteDetailsQuery(slug);
+  const rows = (await prisma.$queryRawUnsafe(query)) as RawRouteDetailsRecord[];
+  const record = rows[0];
+  return record ? serializeRouteDetails(record) : null;
+}
+
+export async function getRouteTrackForExport(slug: string) {
+  const details = await getRouteDetailsBySlug(slug);
+  if (!details || !details.trackGeoJson) {
+    return null;
+  }
+
+  return {
+    id: details.id,
+    slug: details.slug,
+    title: details.title,
+    trackGeoJson: details.trackGeoJson,
+  };
 }
 
 export async function getFeaturedRoutes(limit = 3): Promise<CatalogRoute[]> {
