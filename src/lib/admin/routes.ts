@@ -4,6 +4,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { recordAuditLog, type AuditLogContext } from "@/lib/admin/audit-log";
 import {
   ROUTE_AUDIENCES,
   ROUTE_DIFFICULTIES,
@@ -265,7 +266,7 @@ function toRouteDetails(record: Awaited<ReturnType<typeof prisma.route.findUniqu
   };
 }
 
-export async function createRoute(input: RouteEditorInput, createdBy: string) {
+export async function createRoute(input: RouteEditorInput, createdBy: string, context?: AuditLogContext) {
   const parsed = routeEditorSchema.parse(input);
   const sanitized = sanitizeEditorData(parsed);
 
@@ -315,10 +316,29 @@ export async function createRoute(input: RouteEditorInput, createdBy: string) {
     include: { authors: { include: { user: true } } },
   });
 
-  return toRouteDetails(updated!);
+  const details = toRouteDetails(updated!);
+
+  await recordAuditLog({
+    action: "route.create",
+    entity: "route",
+    entityId: details.id,
+    actorId: createdBy,
+    actorEmail: context?.actorEmail ?? null,
+    ipAddress: context?.ipAddress ?? null,
+    userAgent: context?.userAgent ?? null,
+    metadata: {
+      slug: details.slug,
+      status: details.status,
+      published: sanitized.published,
+      publishedAt: details.publishedAt,
+      authors: details.authors.map((author) => author.id),
+    },
+  });
+
+  return details;
 }
 
-export async function updateRoute(routeId: string, input: RouteEditorInput) {
+export async function updateRoute(routeId: string, input: RouteEditorInput, updatedBy: string, context?: AuditLogContext) {
   const parsed = routeEditorSchema.parse(input);
   const sanitized = sanitizeEditorData(parsed);
   const now = new Date();
@@ -357,7 +377,26 @@ export async function updateRoute(routeId: string, input: RouteEditorInput) {
 
   await setRouteAuthors(routeId, parsed.authors);
 
-  return getRouteForAdmin(routeId);
+  const updatedRoute = await getRouteForAdmin(routeId);
+
+  await recordAuditLog({
+    action: "route.update",
+    entity: "route",
+    entityId: routeId,
+    actorId: updatedBy,
+    actorEmail: context?.actorEmail ?? null,
+    ipAddress: context?.ipAddress ?? null,
+    userAgent: context?.userAgent ?? null,
+    metadata: {
+      slug: updatedRoute.slug,
+      status: updatedRoute.status,
+      published: sanitized.published,
+      publishedAt: updatedRoute.publishedAt,
+      authors: updatedRoute.authors.map((author) => author.id),
+    },
+  });
+
+  return updatedRoute;
 }
 
 export async function listRoutesForAdmin(limit = 50) {

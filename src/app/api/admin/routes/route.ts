@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createRoute, listRoutesForAdmin } from "@/lib/admin/routes";
 import { requireAuthor } from "@/lib/auth/session";
+import { getRequestClientMetadata } from "@/lib/http/request";
 
 export async function GET() {
   await requireAuthor();
@@ -14,7 +15,8 @@ export async function POST(request: Request) {
 
   try {
     const payload = await request.json();
-    const route = await createRoute(payload, user.id);
+    const metadata = getRequestClientMetadata(request);
+    const route = await createRoute(payload, user.id, { actorEmail: user.email, ...metadata });
     return NextResponse.json({ route }, { status: 201 });
   } catch (error) {
     console.error("[admin.routes]", error);

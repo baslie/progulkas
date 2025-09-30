@@ -217,3 +217,22 @@ model Notification {
   @@index([userId, readAt])
 }
 
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entity     String?
+  entityId   String?
+  actorId    String?
+  actorEmail String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+

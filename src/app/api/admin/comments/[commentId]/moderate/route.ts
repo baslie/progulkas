@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUser, hasRole } from "@/lib/auth/session";
+import { getRequestClientMetadata } from "@/lib/http/request";
 import { moderateComment } from "@/lib/social/engagement";
 
 const ALLOWED_STATUSES = new Set(["PUBLISHED", "PENDING", "REJECTED", "HIDDEN"]);
@@ -25,7 +26,11 @@ export async function POST(
       throw new Error("Недопустимый статус");
     }
 
-    await moderateComment(params.commentId, status as "PUBLISHED" | "PENDING" | "REJECTED" | "HIDDEN", user.id);
+    const metadata = getRequestClientMetadata(request);
+    await moderateComment(params.commentId, status as "PUBLISHED" | "PENDING" | "REJECTED" | "HIDDEN", user.id, {
+      actorEmail: user.email,
+      ...metadata,
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось обновить статус";
