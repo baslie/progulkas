@@ -116,7 +116,7 @@ export function RouteCard({ route }: RouteCardProps) {
               ))}
             </div>
             <span className="rounded-full border border-dashed border-border px-3 py-1 text-muted-foreground">
-              Подробнее скоро
+              Подробнее
             </span>
           </footer>
         </div>

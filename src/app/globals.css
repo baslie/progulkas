@@ -1,4 +1,5 @@
 @import url("../../docs/shadcn-ui-theme.css");
+@import url("leaflet/dist/leaflet.css");
 
 @tailwind base;
 @tailwind components;
@@ -15,5 +16,36 @@
 
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .poi-marker {
+    position: relative;
+    width: 1.75rem;
+    height: 1.75rem;
+    transform: translateY(-4px);
+  }
+
+  .poi-marker__dot {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    background: var(--poi-marker-color, #2563eb);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
+  }
+
+  .poi-marker__dot::after {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px 5px 0 5px;
+    border-style: solid;
+    border-color: var(--poi-marker-color, #2563eb) transparent transparent transparent;
   }
 }

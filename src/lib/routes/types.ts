@@ -4,6 +4,25 @@ import type {
   RouteAudienceValue,
   RouteDifficultyValue,
 } from "./constants";
+import type { FeatureCollection, LineString, MultiLineString } from "geojson";
+
+export type RoutePointOfInterestCategory =
+  | "viewpoint"
+  | "food"
+  | "water"
+  | "transport"
+  | "warning"
+  | "info";
+
+export type RoutePointOfInterest = {
+  id: string;
+  name: string;
+  description?: string | null;
+  category: RoutePointOfInterestCategory;
+  coordinates: [number, number];
+};
+
+export type RouteTrackGeoJson = FeatureCollection<LineString | MultiLineString>;
 
 export type CatalogFilters = {
   query?: string;
@@ -36,6 +55,16 @@ export type RawRouteRecord = {
   updatedAt: Date | string;
 };
 
+export type RawRouteDetailsRecord = RawRouteRecord & {
+  descriptionMarkdown: string | null;
+  howToGet: string | null;
+  howToReturn: string | null;
+  safetyNotes: string | null;
+  interestingFacts: string[] | null;
+  trackGeoJson: unknown;
+  pointsOfInterest: unknown;
+};
+
 export type CatalogRoute = {
   id: string;
   slug: string;
@@ -54,4 +83,14 @@ export type CatalogRoute = {
   ratingCount: number;
   publishedAt: Date | null;
   createdAt: Date;
+};
+
+export type RouteDetails = CatalogRoute & {
+  descriptionMarkdown: string;
+  howToGet: string | null;
+  howToReturn: string | null;
+  safetyNotes: string | null;
+  interestingFacts: string[];
+  trackGeoJson: RouteTrackGeoJson | null;
+  pointsOfInterest: RoutePointOfInterest[];
 };
