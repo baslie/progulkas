@@ -14,11 +14,11 @@ export function SiteHeader() {
           <span aria-hidden>Маршруты Прогулки</span>
         </Link>
         <nav aria-label="Основная навигация" className="hidden items-center gap-6 text-sm font-medium md:flex">
+          <Link href="/catalog" className="transition hover:text-primary">
+            Каталог
+          </Link>
           <a href="/features" className="transition hover:text-primary">
             Возможности
-          </a>
-          <a href="/pricing" className="transition hover:text-primary">
-            Тарифы
           </a>
           <a href="/about" className="transition hover:text-primary">
             О проекте
