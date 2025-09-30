@@ -6,7 +6,7 @@ import { RouteDescription } from "@/components/routes/route-description";
 import { RouteInfoBlock } from "@/components/routes/route-info-block";
 import { RouteMap } from "@/components/routes/route-map";
 import { RoutePoiList } from "@/components/routes/route-poi-list";
-import { Button } from "@/components/ui/button";
+import { RouteEngagementSection } from "@/components/routes/route-engagement-section";
 import { getAudienceLabel, getDifficultyLabel } from "@/lib/routes/constants";
 import { getRouteDetailsBySlug } from "@/lib/routes/queries";
 import { formatDistance, formatDuration } from "@/lib/utils";
@@ -42,10 +42,14 @@ export async function generateMetadata({ params }: { params: RoutePageProps["par
 
   const title = `${route.title} — Маршруты Прогулки`;
   const primaryImage = route.coverImageUrl ?? route.previewImageUrl ?? undefined;
+  const canonical = `/catalog/${route.slug}`;
 
   return {
     title,
     description: route.summary,
+    alternates: {
+      canonical,
+    },
     openGraph: {
       title,
       description: route.summary,
@@ -61,6 +65,12 @@ export async function generateMetadata({ params }: { params: RoutePageProps["par
             },
           ]
         : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: route.summary,
+      images: primaryImage ? [primaryImage] : undefined,
     },
   };
 }
@@ -88,9 +98,31 @@ export default async function RoutePage({ params }: RoutePageProps) {
 
   const hasMapData = Boolean(route.trackGeoJson) || route.pointsOfInterest.length > 0;
   const heroImage = route.coverImageUrl ?? route.previewImageUrl;
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    name: route.title,
+    description: route.summary,
+    url: `https://progulkas.local/catalog/${route.slug}`,
+    areaServed: route.city,
+    image: heroImage ?? undefined,
+    reviewCount: route.commentCount,
+  };
+
+  if (route.ratingCount > 0 && route.ratingAverage !== null) {
+    jsonLd.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: route.ratingAverage.toFixed(1),
+      ratingCount: route.ratingCount,
+    };
+  }
 
   return (
     <div className="space-y-12 pb-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-xl">
         <div className="relative">
           <div className="absolute inset-0">
@@ -179,7 +211,12 @@ export default async function RoutePage({ params }: RoutePageProps) {
         </div>
       </article>
 
-      <RouteActions slug={route.slug} hasTrack={Boolean(route.trackGeoJson)} />
+      <RouteActions
+        slug={route.slug}
+        hasTrack={Boolean(route.trackGeoJson)}
+        title={route.title}
+        summary={route.summary}
+      />
 
       <section className="grid gap-10 lg:grid-cols-[1.65fr_1fr]">
         <div className="space-y-8">
@@ -250,19 +287,7 @@ export default async function RoutePage({ params }: RoutePageProps) {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold text-foreground">Готовы поделиться впечатлениями?</h2>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Маршрут будет обновляться по мере появления отзывов и данных от сообщества. Расскажите нам о состоянии троп, инфраструктуре и новых точках интереса.
-            </p>
-          </div>
-          <Button variant="secondary" size="lg" disabled>
-            Скоро добавим отзывы
-          </Button>
-        </div>
-      </section>
+      <RouteEngagementSection slug={route.slug} />
     </div>
   );
 }

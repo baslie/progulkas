@@ -10,6 +10,14 @@ const distanceFormatter = new Intl.NumberFormat("ru-RU", {
   maximumFractionDigits: 1,
 });
 
+const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 export function formatDistance(distanceKm: number) {
   return `${distanceFormatter.format(distanceKm)} км`;
 }
@@ -34,6 +42,10 @@ export function formatDuration(minutes: number) {
   }
 
   return parts.length ? parts.join(" ") : "до 1 ч";
+}
+
+export function formatDateTime(date: Date) {
+  return dateTimeFormatter.format(date);
 }
 
 const CYRILLIC_MAP: Record<string, string> = {

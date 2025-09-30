@@ -243,6 +243,7 @@ function toRouteDetails(record: Awaited<ReturnType<typeof prisma.route.findUniqu
     galleryImageUrls: record.galleryImageUrls,
     ratingAverage: record.ratingAverage ? Number(record.ratingAverage) : null,
     ratingCount: record.ratingCount,
+    commentCount: record.commentCount ?? 0,
     status: record.status as RouteStatusValue,
     publishedAt: record.publishedAt ?? null,
     createdAt: record.createdAt,

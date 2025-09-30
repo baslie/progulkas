@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Star } from "lucide-react";
+import { MessageCircle, Star } from "lucide-react";
 
 import { getAudienceLabel, getDifficultyLabel } from "@/lib/routes/constants";
 import type { CatalogRoute } from "@/lib/routes/types";
@@ -63,10 +63,16 @@ export function RouteCard({ route }: RouteCardProps) {
           <header className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
               <span>{getDifficultyLabel(route.difficulty)}</span>
-              <span className="inline-flex items-center gap-1 text-amber-500">
-                <Star className="h-3.5 w-3.5 fill-amber-500" aria-hidden />
-                <span>{ratingLabel}</span>
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1 text-amber-500">
+                  <Star className="h-3.5 w-3.5 fill-amber-500" aria-hidden />
+                  <span>{ratingLabel}</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+                  {route.commentCount}
+                </span>
+              </div>
             </div>
             <h3 className="text-xl font-semibold leading-tight tracking-tight text-foreground">{route.title}</h3>
             <p className="line-clamp-3 text-sm text-muted-foreground">{route.summary}</p>
