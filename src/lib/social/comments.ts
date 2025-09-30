@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { recordAuditLog, type AuditLogContext } from "@/lib/admin/audit-log";
 import { calculateSpamScore, isLikelySpam, normalizeCommentContent } from "./anti-spam";
 import { createNotification, createNotificationsForUsers, notifyAdmins } from "./notifications";
 import type {
@@ -262,6 +263,7 @@ export async function updateRouteCommentStatus(
   commentId: string,
   status: RouteCommentStatus,
   moderatorId: string,
+  context?: AuditLogContext,
 ): Promise<void> {
   if (![PUBLISH_STATUS, PENDING_STATUS, ...HIDDEN_STATUSES].includes(status)) {
     throw new Error("Недопустимый статус комментария");
@@ -299,6 +301,22 @@ export async function updateRouteCommentStatus(
       moderatorId,
     });
   }
+
+  await recordAuditLog({
+    action: "comment.moderate",
+    entity: "route_comment",
+    entityId: commentId,
+    actorId: moderatorId,
+    actorEmail: context?.actorEmail ?? null,
+    ipAddress: context?.ipAddress ?? null,
+    userAgent: context?.userAgent ?? null,
+    metadata: {
+      routeId: existing.routeId,
+      previousStatus: existing.status,
+      newStatus: status,
+      wasFlagged: existing.isFlagged,
+    },
+  });
 }
 
 export type ModerationQueueItem = {

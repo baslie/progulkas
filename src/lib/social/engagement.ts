@@ -9,6 +9,7 @@ import {
 } from "./comments";
 import { getRouteRatingStats, setRouteRating } from "./ratings";
 import type { RouteEngagementSnapshot } from "./types";
+import type { AuditLogContext } from "@/lib/admin/audit-log";
 
 export async function getPublishedRouteBySlug(slug: string) {
   const route = await prisma.route.findFirst({
@@ -69,8 +70,9 @@ export async function moderateComment(
   commentId: string,
   status: "PUBLISHED" | "PENDING" | "REJECTED" | "HIDDEN",
   moderatorId: string,
+  context?: AuditLogContext,
 ) {
-  await updateRouteCommentStatus(commentId, status, moderatorId);
+  await updateRouteCommentStatus(commentId, status, moderatorId, context);
 }
 
 export async function getModerationQueue(limit?: number) {

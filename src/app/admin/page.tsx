@@ -167,6 +167,20 @@ export default async function AdminDashboardPage() {
           </table>
         </div>
       </section>
+
+      <section className="rounded-3xl border border-dashed border-primary/40 bg-primary/5 p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold text-foreground">Журнал аудита</h2>
+            <p className="text-sm text-muted-foreground">
+              Просматривайте действия администраторов и авторов: публикации, изменения маршрутов и модерацию комментариев.
+            </p>
+          </div>
+          <Link href="/admin/audit-log" className="inline-flex items-center rounded-full border border-primary px-4 py-2 text-sm font-medium text-primary">
+            Перейти к журналу
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

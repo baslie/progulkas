@@ -29,6 +29,9 @@ export async function SiteHeader() {
           <Link href="/about" className="transition hover:text-primary">
             О проекте
           </Link>
+          <Link href="/support" className="transition hover:text-primary">
+            Поддержать
+          </Link>
           {isAuthor ? (
             <Link href="/admin" className="transition hover:text-primary">
               Админка

@@ -11,6 +11,8 @@ const envSchema = z.object({
   EMAIL_SERVER_USER: z.string().optional(),
   EMAIL_SERVER_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+  NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
+  NEXT_PUBLIC_YM_COUNTER_ID: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

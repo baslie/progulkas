@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getRouteForAdmin, updateRoute } from "@/lib/admin/routes";
 import { hasRole, requireAuthor } from "@/lib/auth/session";
+import { getRequestClientMetadata } from "@/lib/http/request";
 
 const paramsSchema = z.object({ routeId: z.string().min(1) });
 
@@ -32,7 +33,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ route
 
   try {
     const payload = await request.json();
-    const route = await updateRoute(routeId, payload);
+    const metadata = getRequestClientMetadata(request);
+    const route = await updateRoute(routeId, payload, user.id, { actorEmail: user.email, ...metadata });
     return NextResponse.json({ route });
   } catch (error) {
     console.error("[admin.routes.update]", error);
