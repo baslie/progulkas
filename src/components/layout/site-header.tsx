@@ -1,8 +1,14 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { getCurrentUser, hasRole } from "@/lib/auth/session";
+import { getUnreadNotificationsCount } from "@/lib/social/notifications";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const user = await getCurrentUser();
+  const unreadCount = user ? await getUnreadNotificationsCount(user.id) : 0;
+  const isAuthor = hasRole(user, "author") || hasRole(user, "admin");
+
   return (
     <header className="border-b border-border bg-background/80 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
@@ -17,21 +23,46 @@ export function SiteHeader() {
           <Link href="/catalog" className="transition hover:text-primary">
             Каталог
           </Link>
-          <a href="/features" className="transition hover:text-primary">
+          <Link href="/features" className="transition hover:text-primary">
             Возможности
-          </a>
-          <a href="/about" className="transition hover:text-primary">
+          </Link>
+          <Link href="/about" className="transition hover:text-primary">
             О проекте
-          </a>
+          </Link>
+          {isAuthor ? (
+            <Link href="/admin" className="transition hover:text-primary">
+              Админка
+            </Link>
+          ) : null}
         </nav>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/auth/sign-in">Войти</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/auth/sign-up">Регистрация</Link>
-          </Button>
-        </div>
+        {user ? (
+          <div className="flex items-center gap-3">
+            <Link
+              href="/notifications"
+              className="relative inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-sm text-foreground transition hover:border-primary hover:text-primary"
+            >
+              Уведомления
+              {unreadCount ? (
+                <span className="inline-flex min-h-[1.5rem] min-w-[1.5rem] items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
+            </Link>
+            <div className="hidden flex-col text-right text-xs text-muted-foreground sm:flex">
+              <span className="text-sm font-medium text-foreground">{user.name ?? user.email}</span>
+              <span>{user.email}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/auth/sign-in">Войти</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/auth/sign-up">Регистрация</Link>
+            </Button>
+          </div>
+        )}
       </div>
     </header>
   );

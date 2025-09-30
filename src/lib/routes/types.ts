@@ -58,6 +58,7 @@ export type RawRouteRecord = {
   galleryImageUrls: string[] | null;
   ratingAverage: unknown;
   ratingCount: number;
+  commentCount: number;
   status: RouteStatusValue;
   isPublished: boolean;
   publishedAt: Date | string | null;
@@ -96,6 +97,7 @@ export type CatalogRoute = {
   galleryImageUrls: string[];
   ratingAverage: number | null;
   ratingCount: number;
+  commentCount: number;
   status: RouteStatusValue;
   publishedAt: Date | null;
   createdAt: Date;
