@@ -76,3 +76,42 @@ model UserRole {
   @@id([userId, roleId])
 }
 
+enum RouteDifficulty {
+  EASY
+  MODERATE
+  CHALLENGING
+}
+
+enum RouteAudience {
+  WALK
+  RUN
+  FAMILY
+  BIKE
+  STROLLER
+}
+
+model Route {
+  id              String           @id @default(cuid())
+  slug            String           @unique
+  title           String
+  summary         String
+  city            String
+  region          String
+  difficulty      RouteDifficulty
+  distanceKm      Decimal          @db.Decimal(6, 2)
+  durationMinutes Int
+  suitableFor     RouteAudience[]
+  tags            String[]         @default([]) @db.Text
+  highlights      String[]         @default([]) @db.Text
+  coverImageUrl   String?
+  ratingAverage   Decimal?         @db.Decimal(3, 2)
+  ratingCount     Int              @default(0)
+  isPublished     Boolean          @default(true)
+  publishedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([isPublished, createdAt])
+  @@index([region, city])
+}
+
